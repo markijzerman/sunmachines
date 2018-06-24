@@ -1,12 +1,47 @@
 #!/usr/bin/env python
 
-# servo_demo.py          # Send servo pulses to GPIO 4.
-# servo_demo.py 23 24 25 # Send servo pulses to GPIO 23, 24, 25.
-
-import sys
+from OSC import OSCServer, OSCMessage
+import sys, signal
 import time
+import types
 import random
 import pigpio
+from threading import Thread
+
+speed1 = 0
+
+### to gracefully handle shutdowns, this runs on shutdown
+def signal_handler(signal, frame):
+    print("\nprogram exiting gracefully, shutting down server")
+    server.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
+### set the OSC server port
+server = OSCServer( ("0.0.0.0", 51507) )
+
+
+### if there's not OSC coming in, print Timeout
+def handle_timeout(self):
+	print ("Timeout")
+
+server.handle_timeout = types.MethodType(handle_timeout, server)
+
+### OSC callbacks
+def fader_callback(path, tags, args, source):
+	# print ("path", path)
+      if path == '/1/fader1':
+            # print(args)
+            speed1 = args[0]*2500
+
+      if path == '/1/fader2':
+            print(args)
+
+server.addMsgHandler( "/1/fader1",fader_callback)
+server.addMsgHandler( "/1/fader2",fader_callback)
+
+### SERVO MOTOR SETTINGS
 
 NUM_GPIO=32
 
@@ -46,47 +81,60 @@ for g2 in G2:
       step2[g2] = -step[g2]
    width2[g2] = MAX_WIDTH2
 
-while True:
 
-   try:
-
-      for g in G1:
-
-         pi.set_servo_pulsewidth(g, width[g])
-
-         # print(g, width[g])
-
-         width[g] += step[g]
-
-         if width[g]<MIN_WIDTH1 or width[g]>MAX_WIDTH1:
-            step[g] = -step[g]
-            width[g] += step[g]
-
-      for g2 in G2:
-
-         pi.set_servo_pulsewidth(g2, width2[g2])
-
-         # print(g, width[g])
-
-         width2[g2] += step2[g2]
-
-         if width2[g2]<MIN_WIDTH2 or width2[g2]>MAX_WIDTH2:
-            step2[g2] = -step2[g2]
-            width2[g2] += step2[g2]
+### the main loop
 
 
-      time.sleep(0.01)
+def runServos():
+      while True:
+            try:
+                  for g in G1:
 
-   except KeyboardInterrupt:
-      break
+                        pi.set_servo_pulsewidth(g, speed1)
+                        print(speed1)
 
-print("\nTidying up")
+                        # print(g, width[g])
 
-for g in G1:
-   pi.set_servo_pulsewidth(g, 0)
+                        width[g] += step[g]
 
-for g2 in G2:
-   pi.set_servo_pulsewidth(g2, 0)
+                        if width[g]<MIN_WIDTH1 or width[g]>MAX_WIDTH1:
+                              step[g] = -step[g]
+                              width[g] += step[g]
 
-pi.stop()
+                  for g2 in G2:
+
+                        pi.set_servo_pulsewidth(g2, width2[g2])
+
+                        # print(g, width[g])
+
+                        width2[g2] += step2[g2]
+
+                        if width2[g2]<MIN_WIDTH2 or width2[g2]>MAX_WIDTH2:
+                              step2[g2] = -step2[g2]
+                              width2[g2] += step2[g2]
+
+                  # server.handle_request()
+                  time.sleep(0.01)  
+            except KeyboardInterrupt:
+                  break
+                  for g in G1:
+                        pi.set_servo_pulsewidth(g, 0)
+
+                  for g2 in G2:
+                        pi.set_servo_pulsewidth(g2, 0)
+
+                  pi.stop()
+
+def getOSC():
+      while True:
+            try:
+	            server.handle_request()
+            except KeyboardInterrupt:
+                  break
+
+t1 = Thread(target = getOSC)
+t2 = Thread(target = runServos)
+t1.start()
+t2.start()
+
 

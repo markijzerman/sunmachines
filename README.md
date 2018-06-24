@@ -7,3 +7,6 @@ Followed this on a clean install: https://blog.thewalr.us/2017/09/26/raspberry-p
 # in crontab
 @reboot /home/pi/start-ap-managed-wifi.sh
 @reboot pigpiod && /usr/bin/python /home/pi/sunmachines/sunmachines_servo.py
+
+# packages
+sudo pip install pyosc --pre
