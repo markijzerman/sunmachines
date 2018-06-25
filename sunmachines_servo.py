@@ -14,12 +14,13 @@ speed1 = 0
 def signal_handler(signal, frame):
     print("\nprogram exiting gracefully, shutting down server")
     server.close()
+    pi.stop()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
 
 ### set the OSC server port
-server = OSCServer( ("0.0.0.0", 51508) )
+server = OSCServer( ("0.0.0.0", 51511) ) 
 
 
 ### if there's not OSC coming in, print Timeout
@@ -30,10 +31,11 @@ server.handle_timeout = types.MethodType(handle_timeout, server)
 
 ### OSC callbacks
 def fader_callback(path, tags, args, source):
+      global speed1 # set speed1 as global var
 	# print ("path", path)
       if path == '/1/fader1':
-            # print(args)
-            speed1 = args[0]*2500
+            print("OSC:",args)
+            speed1 = args[0]
 
       if path == '/1/fader2':
             print(args)
@@ -43,43 +45,17 @@ server.addMsgHandler( "/1/fader2",fader_callback)
 
 ### SERVO MOTOR SETTINGS
 
-NUM_GPIO=32
+SERVO = [4, 11]     # draaien 0, knikken 1
+DIR   = [1, -1]
+PW    = [1500, 1500]
+SPEED = [50, 100]
+BOUNDMIN = [501, 501]
+BOUNDMAX = [2499, 1500] 
 
-MIN_WIDTH1=500
-MAX_WIDTH1=2500
+pi = pigpio.pi() # Connect to local Pi.
 
-MIN_WIDTH2=500
-MAX_WIDTH2=1600
-
-step = [0]*NUM_GPIO
-width = [0]*NUM_GPIO
-used = [False]*NUM_GPIO
-
-step2 = [0]*NUM_GPIO
-width2 = [0]*NUM_GPIO
-used2 = [False]*NUM_GPIO
-
-pi = pigpio.pi()
-
-if not pi.connected:
-   exit()
-
-G1 = [4]
-G2 = [11]
-   
-for g in G1:
-   used[g] = True
-   step[g] = 5 # could be used as speed. 5-25.
-   if step[g] % 2 == 0:
-      step[g] = -step[g]
-   width[g] = MAX_WIDTH1 # max reach. 2500 voor ronddraaien
-
-for g2 in G2:
-   used2[g2] = True
-   step2[g2] = 5 # could be used as speed. 5-25.
-   if step2[g2] % 2 == 0:
-      step2[g2] = -step[g2]
-   width2[g2] = MAX_WIDTH2
+for x in SERVO:
+   pi.set_mode(x, pigpio.OUTPUT) # Set gpio as an output.
 
 
 ### the main loop
@@ -87,43 +63,25 @@ for g2 in G2:
 
 def runServos():
       while True:
-            try:
-                  for g in G1:
 
-                        pi.set_servo_pulsewidth(g, speed1)
-                        print(speed1)
+            for x in range (len(SERVO)): # For each servo.
 
-                        # print(g, width[g])
+                  print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                        width[g] += step[g]
+                  pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
-                        if width[g]<MIN_WIDTH1 or width[g]>MAX_WIDTH1:
-                              step[g] = -step[g]
-                              width[g] += step[g]
+                  PW[x] += (DIR[x] * SPEED[x])
 
-                  for g2 in G2:
+                  if (PW[x] < BOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]): # Bounce back at safe limits.
+                        DIR[x] = - DIR[x]
 
-                        pi.set_servo_pulsewidth(g2, width2[g2])
+                  print(x) # use servo nr to determine speed
+                  time.sleep(0.1)
 
-                        # print(g, width[g])
+      for x in SERVO:
+            pi.set_servo_pulsewidth(x, 0) # Switch servo pulses off.
 
-                        width2[g2] += step2[g2]
-
-                        if width2[g2]<MIN_WIDTH2 or width2[g2]>MAX_WIDTH2:
-                              step2[g2] = -step2[g2]
-                              width2[g2] += step2[g2]
-
-                  # server.handle_request()
-                  time.sleep(0.01)  
-            except KeyboardInterrupt:
-                  break
-                  for g in G1:
-                        pi.set_servo_pulsewidth(g, 0)
-
-                  for g2 in G2:
-                        pi.set_servo_pulsewidth(g2, 0)
-
-                  pi.stop()
+      pi.stop()
 
 def getOSC():
       while True:
