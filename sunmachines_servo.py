@@ -19,7 +19,7 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 ### set the OSC server port
-server = OSCServer( ("0.0.0.0", 51507) )
+server = OSCServer( ("0.0.0.0", 51508) )
 
 
 ### if there's not OSC coming in, print Timeout
@@ -133,8 +133,12 @@ def getOSC():
                   break
 
 t1 = Thread(target = getOSC)
+t1.daemon = True # make threads daemon mode, so they're "slaves" to the master thread
 t2 = Thread(target = runServos)
+t2.daemon = True
 t1.start()
 t2.start()
 
-
+# Make sure Threads keep on running
+while True:
+      time.sleep(1)
