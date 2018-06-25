@@ -51,7 +51,7 @@ server.addMsgHandler( "/1/fader2",fader_callback)
 SERVO = [4, 11]     # 1draaien 0, 1knikken 1
 DIR   = [0.1, -0.1] #direction, but also how many steps
 PW    = [1500, 1500]
-SPEED = [1, 1]
+SPEED = [0, 0]
 BOUNDMIN = [601, 601]
 BOUNDMAX = [2000, 1600]
 
