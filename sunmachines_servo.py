@@ -3,9 +3,11 @@
 from OSC import OSCServer, OSCMessage
 import sys, signal
 import time
+from time import sleep
 import types
 import random
 import pigpio
+from gpiozero import Servo
 from threading import Thread
 
 rotBase1 = 0
@@ -14,7 +16,8 @@ rotBase2 = 0
 rotSweep2 = 0
 absOn = 0
 
-_autoRotateStop = False
+_autoRotate = False
+_absPos = False
 
 ### to gracefully handle shutdowns, this runs on shutdown
 def signal_handler(signal, frame):
@@ -44,12 +47,16 @@ def osc_callback(path, tags, args, source):
       global absOn
       global autoOn
 
-      global _autoRotateStop
+      global _autoRotate
+      global _absPos
 
 	# absolute position control on/off
       if path == '/1/absOn':
             print("absolute position control: on/off",args)
-            absOn = args[0]
+            if args[0] == 1:
+                  _absPos = True
+            else:    
+                  _absPos = False
 
       # absolute position control mirror 1
       if path == '/1/absPos1':
@@ -65,9 +72,9 @@ def osc_callback(path, tags, args, source):
       if path == '/1/autoOn':
             print("auto rotation on/off:",args)
             if args[0] == 1:
-                  _autoRotateStop = True
+                  _autoRotate = True
             else:    
-                  _autoRotateStop = False
+                  _autoRotate = False
 
       # mirror 1 rotation Base speed
       if path == '/1/rotBase1':
@@ -105,8 +112,10 @@ server.addMsgHandler( "/1/rotBase2",osc_callback)
 server.addMsgHandler( "/1/rotSweep2",osc_callback)
 server.addMsgHandler( "/1/presets",osc_callback)
 
-### SERVO MOTOR SETTINGS
 
+
+
+### the main loop
 SERVO = [4, 11]     # 1base 0, 1sweep 1
 DIR   = [0.1, -0.1] #direction, but also how many steps
 PW    = [1500, 1500]
@@ -116,16 +125,13 @@ BOUNDMAX = [2000, 1600]
 
 pi = pigpio.pi() # Connect to local Pi.
 
-for x in SERVO:
-   pi.set_mode(x, pigpio.OUTPUT) # Set gpio as an output.
-
-
-### the main loop
-
-
 def autoRotate():
+      print("start autorotate def")
+      for x in SERVO:
+            pi.set_mode(x, pigpio.OUTPUT) # Set gpio as an output.
+
       while True:
-            if _autoRotateStop == True:
+            if _autoRotate == True:
                   for x in range (len(SERVO)): # For each servo.
 
                         # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
@@ -141,7 +147,18 @@ def autoRotate():
 
                         time.sleep(0.01)
 
-      # pi.stop()
+      # pi.stop
+
+# def absPos():
+#       while True:
+#             if _absPos == True:
+#                   servo = Servo(4)
+#                   while True:
+#                         if _absPos == True:
+#                               servo.min()
+#                               sleep(1)
+#                               servo.max()
+
 
 def getOSC():
       while True:
@@ -154,8 +171,11 @@ t1 = Thread(target = getOSC)
 t1.daemon = True # make threads daemon mode, so they're "slaves" to the master thread
 t2 = Thread(target = autoRotate)
 t2.daemon = True
+t3 = Thread(target = absPos)
+t3.daemon = True
 t1.start()
 t2.start()
+t3.start()
 
 # Make sure Threads keep on running
 while True:
