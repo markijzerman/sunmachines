@@ -31,24 +31,69 @@ def handle_timeout(self):
 server.handle_timeout = types.MethodType(handle_timeout, server)
 
 ### OSC callbacks
-def fader_callback(path, tags, args, source):
+def osc_callback(path, tags, args, source):
       global speed1 # set speed1 as global var
       global speed2
-	# print ("path", path)
-      if path == '/1/fader1':
+
+	# absolute position control on/off
+      if path == '/1/absOn':
+            print("OSC:",args)
+            # speed1 = args[0]
+
+      # absolute position control mirror 1
+      if path == '/1/absPos1':
+            print("OSC:",args)
+            # speed1 = args[0]
+
+      # absolute position control mirror 2
+      if path == '/1/absPos2':
+            print("OSC:",args)
+            # speed1 = args[0]
+
+      # auto rotation on/off
+      if path == '/1/autoOn':
+            print("OSC:",args)
+            # speed1 = args[0]
+
+      # mirror 1 rotation Base speed
+      if path == '/1/rotBase1':
             print("OSC:",args)
             speed1 = args[0]
 
-      if path == '/1/fader2':
+      # mirror 1 rotation Sweep speed
+      if path == '/1/rotSweep1':
             print("OSC:",args)
             speed2 = args[0]
 
-server.addMsgHandler( "/1/fader1",fader_callback)
-server.addMsgHandler( "/1/fader2",fader_callback)
+      # mirror 2 rotation Base speed
+      if path == '/1/rotBase2':
+            print("OSC:",args)
+            speed1 = args[0]
+
+      # mirror 2 rotation Sweep speed
+      if path == '/1/rotSweep2':
+            print("OSC:",args)
+            speed2 = args[0]
+
+      # handle preset presses
+      if path == '/1/presets':
+            print("OSC:",args)
+            speed2 = args[0]
+      
+
+server.addMsgHandler( "/1/absOn",osc_callback)
+server.addMsgHandler( "/1/absPos1",osc_callback)
+server.addMsgHandler( "/1/absPos2",osc_callback)
+server.addMsgHandler( "/1/autoOn",osc_callback)
+server.addMsgHandler( "/1/rotBase1",osc_callback)
+server.addMsgHandler( "/1/rotSweep1",osc_callback)
+server.addMsgHandler( "/1/rotBase2",osc_callback)
+server.addMsgHandler( "/1/rotSweep2",osc_callback)
+server.addMsgHandler( "/1/presets",osc_callback)
 
 ### SERVO MOTOR SETTINGS
 
-SERVO = [4, 11]     # 1draaien 0, 1knikken 1
+SERVO = [4, 11]     # 1base 0, 1sweep 1
 DIR   = [0.1, -0.1] #direction, but also how many steps
 PW    = [1500, 1500]
 SPEED = [0, 0]
