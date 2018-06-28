@@ -37,48 +37,48 @@ def osc_callback(path, tags, args, source):
 
 	# absolute position control on/off
       if path == '/1/absOn':
-            print("OSC:",args)
+            print("absolute position control: on/off",args)
             # speed1 = args[0]
 
       # absolute position control mirror 1
       if path == '/1/absPos1':
-            print("OSC:",args)
+            print("abs XY m1:",args)
             # speed1 = args[0]
 
       # absolute position control mirror 2
       if path == '/1/absPos2':
-            print("OSC:",args)
+            print("abs XY m2:",args)
             # speed1 = args[0]
 
       # auto rotation on/off
       if path == '/1/autoOn':
-            print("OSC:",args)
+            print("auto rotation on/off:",args)
             # speed1 = args[0]
 
       # mirror 1 rotation Base speed
       if path == '/1/rotBase1':
-            print("OSC:",args)
+            print("base rotation m1:",args)
             speed1 = args[0]
 
       # mirror 1 rotation Sweep speed
       if path == '/1/rotSweep1':
-            print("OSC:",args)
+            print("sweep rotation m1:",args)
             speed2 = args[0]
 
       # mirror 2 rotation Base speed
       if path == '/1/rotBase2':
-            print("OSC:",args)
-            speed1 = args[0]
+            print("base rotation m2:",args)
+            # speed1 = args[0]
 
       # mirror 2 rotation Sweep speed
       if path == '/1/rotSweep2':
-            print("OSC:",args)
-            speed2 = args[0]
+            print("sweep rotation m2:",args)
+            # speed2 = args[0]
 
       # handle preset presses
       if path == '/1/presets':
-            print("OSC:",args)
-            speed2 = args[0]
+            print("presets:",args)
+            # speed2 = args[0]
       
 
 server.addMsgHandler( "/1/absOn",osc_callback)
@@ -114,7 +114,7 @@ def runServos():
 
             for x in range (len(SERVO)): # For each servo.
 
-                  print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
+                  # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
                   SPEED = [speed1*500, speed2*500]
 
@@ -125,7 +125,6 @@ def runServos():
                   if (PW[x] < BOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]): # Bounce back at safe limits.
                         DIR[x] = - DIR[x]
 
-                  print(x) # use servo nr to determine speed
                   time.sleep(0.01)
 
       # pi.stop()
