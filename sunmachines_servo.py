@@ -14,6 +14,8 @@ rotBase2 = 0
 rotSweep2 = 0
 absOn = 0
 
+_autoRotateStop = False
+
 ### to gracefully handle shutdowns, this runs on shutdown
 def signal_handler(signal, frame):
     print("\nprogram exiting gracefully, shutting down server")
@@ -42,6 +44,8 @@ def osc_callback(path, tags, args, source):
       global absOn
       global autoOn
 
+      global _autoRotateStop
+
 	# absolute position control on/off
       if path == '/1/absOn':
             print("absolute position control: on/off",args)
@@ -61,11 +65,9 @@ def osc_callback(path, tags, args, source):
       if path == '/1/autoOn':
             print("auto rotation on/off:",args)
             if args[0] == 1:
-                  t2.start()
-            else:
-                  if t2.isAlive():
-                        print("alive, should be killed!")
-                        t2._stop()
+                  _autoRotateStop = True
+            else:    
+                  _autoRotateStop = False
 
       # mirror 1 rotation Base speed
       if path == '/1/rotBase1':
@@ -121,23 +123,23 @@ for x in SERVO:
 ### the main loop
 
 
-def runServos():
+def autoRotate():
       while True:
+            if _autoRotateStop == True:
+                  for x in range (len(SERVO)): # For each servo.
 
-            for x in range (len(SERVO)): # For each servo.
+                        # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                  # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
+                        SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
 
-                  SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
+                        pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
-                  pi.set_servo_pulsewidth(SERVO[x], PW[x])
+                        PW[x] += (DIR[x] * SPEED[x])
 
-                  PW[x] += (DIR[x] * SPEED[x])
+                        if (PW[x] < BOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]): # Bounce back at safe limits.
+                              DIR[x] = - DIR[x]
 
-                  if (PW[x] < BOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]): # Bounce back at safe limits.
-                        DIR[x] = - DIR[x]
-
-                  time.sleep(0.01)
+                        time.sleep(0.01)
 
       # pi.stop()
 
@@ -150,10 +152,10 @@ def getOSC():
 
 t1 = Thread(target = getOSC)
 t1.daemon = True # make threads daemon mode, so they're "slaves" to the master thread
-t2 = Thread(target = runServos)
+t2 = Thread(target = autoRotate)
 t2.daemon = True
 t1.start()
-# t2.start()
+t2.start()
 
 # Make sure Threads keep on running
 while True:
