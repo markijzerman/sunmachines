@@ -8,8 +8,11 @@ import random
 import pigpio
 from threading import Thread
 
-speed1 = 0
-speed2 = 0
+rotBase1 = 0
+rotSweep1 = 0
+rotBase2 = 0
+rotSweep2 = 0
+absOn = 0
 
 ### to gracefully handle shutdowns, this runs on shutdown
 def signal_handler(signal, frame):
@@ -32,13 +35,17 @@ server.handle_timeout = types.MethodType(handle_timeout, server)
 
 ### OSC callbacks
 def osc_callback(path, tags, args, source):
-      global speed1 # set speed1 as global var
-      global speed2
+      global rotBase1 # set speed1 as global var
+      global rotSweep1
+      global rotBase2
+      global rotSweep2
+      global absOn
+      global autoOn
 
 	# absolute position control on/off
       if path == '/1/absOn':
             print("absolute position control: on/off",args)
-            # speed1 = args[0]
+            absOn = args[0]
 
       # absolute position control mirror 1
       if path == '/1/absPos1':
@@ -53,27 +60,32 @@ def osc_callback(path, tags, args, source):
       # auto rotation on/off
       if path == '/1/autoOn':
             print("auto rotation on/off:",args)
-            # speed1 = args[0]
+            if args[0] == 1:
+                  t2.start()
+            else:
+                  if t2.isAlive():
+                        print("alive, should be killed!")
+                        t2._stop()
 
       # mirror 1 rotation Base speed
       if path == '/1/rotBase1':
             print("base rotation m1:",args)
-            speed1 = args[0]
+            rotBase1 = args[0]
 
       # mirror 1 rotation Sweep speed
       if path == '/1/rotSweep1':
             print("sweep rotation m1:",args)
-            speed2 = args[0]
+            rotSweep1 = args[0]
 
       # mirror 2 rotation Base speed
       if path == '/1/rotBase2':
             print("base rotation m2:",args)
-            # speed1 = args[0]
+            rotBase2 = args[0]
 
       # mirror 2 rotation Sweep speed
       if path == '/1/rotSweep2':
             print("sweep rotation m2:",args)
-            # speed2 = args[0]
+            rotSweep2 = args[0]
 
       # handle preset presses
       if path == '/1/presets':
@@ -96,7 +108,7 @@ server.addMsgHandler( "/1/presets",osc_callback)
 SERVO = [4, 11]     # 1base 0, 1sweep 1
 DIR   = [0.1, -0.1] #direction, but also how many steps
 PW    = [1500, 1500]
-SPEED = [0, 0]
+SPEED = [0, 0, 0, 0]
 BOUNDMIN = [601, 601]
 BOUNDMAX = [2000, 1600]
 
@@ -116,7 +128,7 @@ def runServos():
 
                   # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                  SPEED = [speed1*500, speed2*500]
+                  SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
 
                   pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
@@ -141,7 +153,7 @@ t1.daemon = True # make threads daemon mode, so they're "slaves" to the master t
 t2 = Thread(target = runServos)
 t2.daemon = True
 t1.start()
-t2.start()
+# t2.start()
 
 # Make sure Threads keep on running
 while True:
