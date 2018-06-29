@@ -3,11 +3,9 @@
 from OSC import OSCServer, OSCMessage
 import sys, signal
 import time
-from time import sleep
 import types
 import random
 import pigpio
-from gpiozero import Servo
 from threading import Thread
 
 rotBase1 = 0
@@ -15,8 +13,16 @@ rotSweep1 = 0
 rotBase2 = 0
 rotSweep2 = 0
 absOn = 0
+BaseMin1 = 0
+BaseMax1 = 0
+SweepMin1 = 0
+SweepMax1 = 0
+BaseMin2 = 0
+BaseMax2 = 0
+SweepMin2 = 0
+SweepMax2 = 0
 
-_autoRotate = False
+_autoRotate = True
 _absPos = False
 
 ### to gracefully handle shutdowns, this runs on shutdown
@@ -46,6 +52,14 @@ def osc_callback(path, tags, args, source):
       global rotSweep2
       global absOn
       global autoOn
+      global BaseMin1
+      global BaseMax1
+      global SweepMin1
+      global SweepMax1
+      global BaseMin2
+      global BaseMax2
+      global SweepMin2
+      global SweepMax2
 
       global _autoRotate
       global _absPos
@@ -101,6 +115,34 @@ def osc_callback(path, tags, args, source):
             print("presets:",args)
             # speed2 = args[0]
       
+      # handle mirror bounds
+      if path == '/2/1BaseMin':
+            print("mirror 1 base min:",args)
+            BaseMin1 = args[0]
+      if path == '/2/1BaseMax':
+            print("mirror 1 base max:",args)
+            BaseMax1 = args[0]
+      if path == '/2/1SweepMin':
+            print("mirror 1 sweep min:",args)
+            SweepMin1 = args[0]
+      if path == '/2/1SweepMax':
+            print("mirror 1 sweep max:",args)
+            SweepMax1 = args[0]
+
+      # handle mirror 2 bounds
+      if path == '/2/2BaseMin':
+            print("mirror 2 base min:",args)
+            BaseMin2 = args[0]
+      if path == '/2/2BaseMax':
+            print("mirror 2 base max:",args)
+            BaseMax2 = args[0]
+      if path == '/2/2SweepMin':
+            print("mirror 2 sweep min:",args)
+            SweepMin2 = args[0]
+      if path == '/2/2SweepMax':
+            print("mirror 2 sweep max:",args)
+            SweepMax2 = args[0]
+      
 
 server.addMsgHandler( "/1/absOn",osc_callback)
 server.addMsgHandler( "/1/absPos1",osc_callback)
@@ -111,6 +153,14 @@ server.addMsgHandler( "/1/rotSweep1",osc_callback)
 server.addMsgHandler( "/1/rotBase2",osc_callback)
 server.addMsgHandler( "/1/rotSweep2",osc_callback)
 server.addMsgHandler( "/1/presets",osc_callback)
+server.addMsgHandler( "/2/1BaseMin",osc_callback)
+server.addMsgHandler( "/2/1BaseMax",osc_callback)
+server.addMsgHandler( "/2/1SweepMin",osc_callback)
+server.addMsgHandler( "/2/1SweepMax",osc_callback)
+server.addMsgHandler( "/2/2BaseMin",osc_callback)
+server.addMsgHandler( "/2/2BaseMax",osc_callback)
+server.addMsgHandler( "/2/2SweepMin",osc_callback)
+server.addMsgHandler( "/2/2SweepMax",osc_callback)
 
 
 
@@ -122,13 +172,18 @@ PW    = [1500, 1500]
 SPEED = [0, 0, 0, 0]
 BOUNDMIN = [601, 601]
 BOUNDMAX = [2000, 1600]
+SETBOUNDMIN = [0, 0]
+SETBOUNDMAX = [0, 0]
 
 pi = pigpio.pi() # Connect to local Pi.
 
+for x in SERVO:
+      pi.set_mode(x, pigpio.OUTPUT) # Set gpio as an output.
+
 def autoRotate():
-      print("start autorotate def")
-      for x in SERVO:
-            pi.set_mode(x, pigpio.OUTPUT) # Set gpio as an output.
+      if _autoRotate == True:
+            _absPos = False
+            print("Autorotate turned ON")
 
       while True:
             if _autoRotate == True:
@@ -138,26 +193,28 @@ def autoRotate():
 
                         SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
 
+                        SETBOUNDMIN = [BaseMin1*800, SweepMin1*800, BaseMin2*800, SweepMin2*800]
+
+                        SETBOUNDMAX = [BaseMax1*800, SweepMax1*800, BaseMax2*800, SweepMax2*800]
+
+
                         pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
                         PW[x] += (DIR[x] * SPEED[x])
 
-                        if (PW[x] < BOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]): # Bounce back at safe limits.
+                        if (PW[x] < BOUNDMIN[x]+SETBOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]-SETBOUNDMAX[x]): # Bounce back at safe limits.
                               DIR[x] = - DIR[x]
 
                         time.sleep(0.01)
 
-      # pi.stop
+def absPos():
+      if _absPos == True:
+            _autoRotate = False
+            print("Absolute Position turned ON")
 
-# def absPos():
-#       while True:
-#             if _absPos == True:
-#                   servo = Servo(4)
-#                   while True:
-#                         if _absPos == True:
-#                               servo.min()
-#                               sleep(1)
-#                               servo.max()
+      while True:
+            if _absPos == True:
+                  time.sleep(0.01)
 
 
 def getOSC():
