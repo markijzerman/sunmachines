@@ -21,6 +21,10 @@ BaseMin2 = 0
 BaseMax2 = 0
 SweepMin2 = 0
 SweepMax2 = 0
+OffsetX1 = 1
+OffsetY1 = 1
+OffsetX2 = 1
+OffsetY2 = 1
 
 _autoRotate = True
 _absPos = False
@@ -60,6 +64,10 @@ def osc_callback(path, tags, args, source):
       global BaseMax2
       global SweepMin2
       global SweepMax2
+      global OffsetX1
+      global OffsetY1
+      global OffsetX2
+      global OffsetY2
 
       global _autoRotate
       global _absPos
@@ -74,13 +82,15 @@ def osc_callback(path, tags, args, source):
 
       # absolute position control mirror 1
       if path == '/1/absPos1':
-            print("abs XY m1:",args)
-            # speed1 = args[0]
+            # print("abs XY m1:",args)
+            OffsetX1 = args[0]
+            OffsetY1 = args[1]
 
       # absolute position control mirror 2
       if path == '/1/absPos2':
-            print("abs XY m2:",args)
-            # speed1 = args[0]
+            # print("abs XY m2:",args)
+            OffsetX2 = args[0]
+            OffsetY2 = args[1]
 
       # auto rotation on/off
       if path == '/1/autoOn':
@@ -92,22 +102,22 @@ def osc_callback(path, tags, args, source):
 
       # mirror 1 rotation Base speed
       if path == '/1/rotBase1':
-            print("base rotation m1:",args)
+            # print("base rotation m1:",args)
             rotBase1 = args[0]
 
       # mirror 1 rotation Sweep speed
       if path == '/1/rotSweep1':
-            print("sweep rotation m1:",args)
+            # print("sweep rotation m1:",args)
             rotSweep1 = args[0]
 
       # mirror 2 rotation Base speed
       if path == '/1/rotBase2':
-            print("base rotation m2:",args)
+            # print("base rotation m2:",args)
             rotBase2 = args[0]
 
       # mirror 2 rotation Sweep speed
       if path == '/1/rotSweep2':
-            print("sweep rotation m2:",args)
+            # print("sweep rotation m2:",args)
             rotSweep2 = args[0]
 
       # handle preset presses
@@ -117,30 +127,30 @@ def osc_callback(path, tags, args, source):
       
       # handle mirror bounds
       if path == '/2/1BaseMin':
-            print("mirror 1 base min:",args)
+            # print("mirror 1 base min:",args)
             BaseMin1 = args[0]
       if path == '/2/1BaseMax':
-            print("mirror 1 base max:",args)
+            # print("mirror 1 base max:",args)
             BaseMax1 = args[0]
       if path == '/2/1SweepMin':
-            print("mirror 1 sweep min:",args)
+            # print("mirror 1 sweep min:",args)
             SweepMin1 = args[0]
       if path == '/2/1SweepMax':
-            print("mirror 1 sweep max:",args)
+            # print("mirror 1 sweep max:",args)
             SweepMax1 = args[0]
 
       # handle mirror 2 bounds
       if path == '/2/2BaseMin':
-            print("mirror 2 base min:",args)
+            # print("mirror 2 base min:",args)
             BaseMin2 = args[0]
       if path == '/2/2BaseMax':
-            print("mirror 2 base max:",args)
+            # print("mirror 2 base max:",args)
             BaseMax2 = args[0]
       if path == '/2/2SweepMin':
-            print("mirror 2 sweep min:",args)
+            # print("mirror 2 sweep min:",args)
             SweepMin2 = args[0]
       if path == '/2/2SweepMax':
-            print("mirror 2 sweep max:",args)
+            # print("mirror 2 sweep max:",args)
             SweepMax2 = args[0]
       
 
@@ -174,6 +184,7 @@ BOUNDMIN = [601, 601]
 BOUNDMAX = [2000, 1600]
 SETBOUNDMIN = [0, 0]
 SETBOUNDMAX = [0, 0]
+OFFSET = [0, 0]
 
 pi = pigpio.pi() # Connect to local Pi.
 
@@ -202,6 +213,8 @@ def autoRotate():
 
                         PW[x] += (DIR[x] * SPEED[x])
 
+                        PW[x] = PW[x]
+
                         if (PW[x] < BOUNDMIN[x]+SETBOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]-SETBOUNDMAX[x]): # Bounce back at safe limits.
                               DIR[x] = - DIR[x]
 
@@ -214,7 +227,38 @@ def absPos():
 
       while True:
             if _absPos == True:
-                  time.sleep(0.01)
+                  for x in range (len(SERVO)): # For each servo.
+
+                        # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
+
+                        SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
+
+                        SETBOUNDMIN = [BaseMin1*800, SweepMin1*800, BaseMin2*800, SweepMin2*800]
+
+                        SETBOUNDMAX = [BaseMax1*800, SweepMax1*800, BaseMax2*800, SweepMax2*800]
+
+                        OFFSET = [(OffsetX1*1400)-1099,(OffsetY1*999)-800,(OffsetX2*1000)-500,(OffsetY2*1000)-500] 
+ 
+
+                        pi.set_servo_pulsewidth(SERVO[x], PW[x])
+
+                        # if (x == 0):
+                        #       print(PW[x])
+
+                        if (PW[x] < BOUNDMAX[x]) and (PW[x] > BOUNDMIN[x]):
+                              PW[x] = (BOUNDMAX[x] - BOUNDMIN[x] / 2) + OFFSET[x] 
+                        else:
+                              if (PW[x] > BOUNDMAX[x]):
+                                    PW[x] = PW[x] - 100
+                                    print(x, "GONE TOO FAR in MAX", PW[x]) 
+                              
+                              if (PW[x] < BOUNDMIN[x]):
+                                    PW[x] = PW[x] + 100
+                                    print(x, "GONE TOO FAR in MIN", PW[x]) 
+
+
+                        time.sleep(0.01)
+
 
 
 def getOSC():
