@@ -39,7 +39,7 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 ### set the OSC server port
-server = OSCServer( ("0.0.0.0", 51511) ) 
+server = OSCServer( ("0.0.0.0", 5100) ) 
 
 
 ### if there's not OSC coming in, print Timeout
@@ -176,15 +176,15 @@ server.addMsgHandler( "/2/2SweepMax",osc_callback)
 
 
 ### the main loop
-SERVO = [4, 11]     # 1base 0, 1sweep 1
-DIR   = [0.1, -0.1] #direction, but also how many steps
-PW    = [1500, 1500]
+SERVO = [4, 17, 18, 27]     # 1base 0, 1sweep 1
+DIR   = [0.1, -0.1, 0.1, -0.1] #direction, but also how many steps
+PW    = [1500, 1500, 1500, 1500]
 SPEED = [0, 0, 0, 0]
-BOUNDMIN = [601, 601]
-BOUNDMAX = [2000, 1600]
-SETBOUNDMIN = [0, 0]
-SETBOUNDMAX = [0, 0]
-OFFSET = [0, 0]
+BOUNDMIN = [601, 601, 601, 601]
+BOUNDMAX = [2000, 1600, 2000, 1600]
+SETBOUNDMIN = [0, 0, 0, 0]
+SETBOUNDMAX = [0, 0, 0, 0]
+OFFSET = [0, 0, 0, 0]
 
 pi = pigpio.pi() # Connect to local Pi.
 
