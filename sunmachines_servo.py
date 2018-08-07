@@ -50,7 +50,7 @@ server.handle_timeout = types.MethodType(handle_timeout, server)
 
 ### OSC callbacks
 def osc_callback(path, tags, args, source):
-      global rotBase1 # set speed1 as global var
+      global rotBase1
       global rotSweep1
       global rotBase2
       global rotSweep2
