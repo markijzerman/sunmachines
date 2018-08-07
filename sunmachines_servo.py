@@ -178,12 +178,18 @@ server.addMsgHandler( "/2/2SweepMax",osc_callback)
 ### the main loop
 SERVO = [4, 17, 18, 27]     # 1base 0, 1sweep 1
 DIR   = [0.1, -0.1, 0.1, -0.1] #direction, but also how many steps
-PW    = [1500, 1500, 1500, 1500]
+PW    = [0, 0, 0, 0]
 SPEED = [0, 0, 0, 0]
-BOUNDMIN = [501, 501, 501, 501] 
-BOUNDMAX = [1251, 1251, 1251, 1251]
-SETBOUNDMIN = [0, 0, 0, 0]
-SETBOUNDMAX = [0, 0, 0, 0]
+BOUNDMIN = [500, 500, 500, 500] 
+BOUNDMAX = [1500, 1500, 1500, 1500]
+
+OffsetX1 = 0.5
+OffsetY1 = 0.5
+OffsetX2 = 0.5
+OffsetY2 = 0.5
+
+MIDDLE = [0.67, 0.39, 0.7, 0.45]
+CENTER = [0, 0, 0, 0]
 OFFSET = [0, 0, 0, 0]
 
 pi = pigpio.pi() # Connect to local Pi.
@@ -198,25 +204,25 @@ def autoRotate():
 
       while True:
             if _autoRotate == True:
-                  for x in range (len(SERVO)): # For each servo.
+                  # for x in range (len(SERVO)): # For each servo.
 
-                        print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
+                  #       print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                        SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
+                  #       SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
 
-                        SETBOUNDMIN = [BaseMin1*800, SweepMin1*800, BaseMin2*800, SweepMin2*800]
+                  #       SETBOUNDMIN = [BaseMin1*800, SweepMin1*800, BaseMin2*800, SweepMin2*800]
 
-                        SETBOUNDMAX = [BaseMax1*800, SweepMax1*800, BaseMax2*800, SweepMax2*800]
+                  #       SETBOUNDMAX = [BaseMax1*800, SweepMax1*800, BaseMax2*800, SweepMax2*800]
 
 
-                        pi.set_servo_pulsewidth(SERVO[x], PW[x])
+                  #       pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
-                        PW[x] += (DIR[x] * SPEED[x])
+                  #       PW[x] += (DIR[x] * SPEED[x])
 
-                        PW[x] = PW[x]
+                  #       PW[x] = PW[x]
 
-                        if (PW[x] < BOUNDMIN[x]+SETBOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]-SETBOUNDMAX[x]): # Bounce back at safe limits.
-                              DIR[x] = - DIR[x]
+                  #       if (PW[x] < BOUNDMIN[x]+SETBOUNDMIN[x]) or (PW[x] > BOUNDMAX[x]-SETBOUNDMAX[x]): # Bounce back at safe limits.
+                  #             DIR[x] = - DIR[x]
 
                         time.sleep(0.01)
 
@@ -231,13 +237,12 @@ def absPos():
 
                         # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                        OFFSET = [(OffsetX1*1500)+500, (OffsetY1*1500)+500, (OffsetX2*1500)+500, (OffsetY2*1500)+500]
+                        CENTER[x] = (MIDDLE[x]*BOUNDMAX[x])+BOUNDMIN[x] 
+                        OFFSET = [(OffsetX1-0.5)*1500, (OffsetY1-0.5)*500, (OffsetX2-0.5)*1500, (OffsetY2-0.5)*500]
 
-                        PW[x] = OFFSET[x]
+                        PW[x] = CENTER[x]+OFFSET[x]
 
                         pi.set_servo_pulsewidth(SERVO[x], PW[x])
-
-
                         time.sleep(0.01)
 
 def getOSC():
