@@ -26,8 +26,8 @@ OffsetY1 = 1
 OffsetX2 = 1
 OffsetY2 = 1
 
-_autoRotate = True
-_absPos = False
+_autoRotate = False
+_absPos = True
 
 ### to gracefully handle shutdowns, this runs on shutdown
 def signal_handler(signal, frame):
@@ -180,8 +180,8 @@ SERVO = [4, 17, 18, 27]     # 1base 0, 1sweep 1
 DIR   = [0.1, -0.1, 0.1, -0.1] #direction, but also how many steps
 PW    = [1500, 1500, 1500, 1500]
 SPEED = [0, 0, 0, 0]
-BOUNDMIN = [601, 601, 601, 601]
-BOUNDMAX = [2000, 1600, 2000, 1600]
+BOUNDMIN = [501, 501, 501, 501] 
+BOUNDMAX = [1251, 1251, 1251, 1251]
 SETBOUNDMIN = [0, 0, 0, 0]
 SETBOUNDMAX = [0, 0, 0, 0]
 OFFSET = [0, 0, 0, 0]
@@ -200,7 +200,7 @@ def autoRotate():
             if _autoRotate == True:
                   for x in range (len(SERVO)): # For each servo.
 
-                        # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
+                        print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
                         SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
 
@@ -231,35 +231,14 @@ def absPos():
 
                         # print("Servo {} pulsewidth {} microseconds.".format(x, PW[x]))
 
-                        SPEED = [rotBase1*500, rotSweep1*500, rotBase2*500, rotSweep2*500]
+                        OFFSET = [(OffsetX1*1500)+500, (OffsetY1*1500)+500, (OffsetX2*1500)+500, (OffsetY2*1500)+500]
 
-                        SETBOUNDMIN = [BaseMin1*800, SweepMin1*800, BaseMin2*800, SweepMin2*800]
-
-                        SETBOUNDMAX = [BaseMax1*800, SweepMax1*800, BaseMax2*800, SweepMax2*800]
-
-                        OFFSET = [(OffsetX1*1400)-1099,(OffsetY1*999)-800,(OffsetX2*1000)-500,(OffsetY2*1000)-500] 
- 
+                        PW[x] = OFFSET[x]
 
                         pi.set_servo_pulsewidth(SERVO[x], PW[x])
 
-                        # if (x == 0):
-                        #       print(PW[x])
-
-                        if (PW[x] < BOUNDMAX[x]) and (PW[x] > BOUNDMIN[x]):
-                              PW[x] = (BOUNDMAX[x] - BOUNDMIN[x] / 2) + OFFSET[x] 
-                        else:
-                              if (PW[x] > BOUNDMAX[x]):
-                                    PW[x] = PW[x] - 100
-                                    print(x, "GONE TOO FAR in MAX", PW[x]) 
-                              
-                              if (PW[x] < BOUNDMIN[x]):
-                                    PW[x] = PW[x] + 100
-                                    print(x, "GONE TOO FAR in MIN", PW[x]) 
-
 
                         time.sleep(0.01)
-
-
 
 def getOSC():
       while True:
