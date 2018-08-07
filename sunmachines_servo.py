@@ -8,23 +8,11 @@ import random
 import pigpio
 from threading import Thread
 
-rotBase1 = 0
-rotSweep1 = 0
-rotBase2 = 0
-rotSweep2 = 0
 absOn = 0
-BaseMin1 = 0
-BaseMax1 = 0
-SweepMin1 = 0
-SweepMax1 = 0
-BaseMin2 = 0
-BaseMax2 = 0
-SweepMin2 = 0
-SweepMax2 = 0
-OffsetX1 = 1
-OffsetY1 = 1
-OffsetX2 = 1
-OffsetY2 = 1
+OffsetX1 = 0.5
+OffsetY1 = 0.5
+OffsetX2 = 0.5
+OffsetY2 = 0.5
 
 _autoRotate = False
 _absPos = True
@@ -182,11 +170,6 @@ PW    = [0, 0, 0, 0]
 SPEED = [0, 0, 0, 0]
 BOUNDMIN = [500, 500, 500, 500] 
 BOUNDMAX = [1500, 1500, 1500, 1500]
-
-OffsetX1 = 0.5
-OffsetY1 = 0.5
-OffsetX2 = 0.5
-OffsetY2 = 0.5
 
 MIDDLE = [0.67, 0.39, 0.7, 0.45]
 CENTER = [0, 0, 0, 0]
